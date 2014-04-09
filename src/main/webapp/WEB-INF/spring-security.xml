@@ -1,0 +1,56 @@
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+             xmlns:beans="http://www.springframework.org/schema/beans" 
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/security
+	http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+    
+    <!-- Empty filter chain for the login page -->
+    <http pattern="/index.jsp" security="none"/>
+    <!--<http pattern="/rest/login" security="none"/>-->
+    
+    <http entry-point-ref="restAuthenticationEntryPoint">
+        <intercept-url pattern="/rest/**" access="ROLE_USER" method="POST"/>
+        <intercept-url pattern="/rest/**" access="ROLE_USER" method="GET"/>
+        <!-- Adds the custom login filter to Spring Security filter chain -->
+        <custom-filter ref="loginFilter" position="FORM_LOGIN_FILTER"/>
+        <!-- Adds a logout filter to Spring Security filter chain -->    
+        <logout logout-url="/rest/logout" delete-cookies="true" invalidate-session="true" success-handler-ref="logoutSuccessHandler"/>        
+    </http>
+       
+    <!-- Additional filter chain for normal users, matching all other requests 
+    <http pattern='/**' auto-config="true">
+        <intercept-url pattern='/**' access='ROLE_USER' />
+        <logout logout-success-url="/index.jsp" />
+    </http>
+    -->
+    <beans:bean id="restAuthenticationEntryPoint"
+                class="it.cnr.isti.ctt.security.RestAuthenticationEntryPoint" />
+    
+    <beans:bean id="loginFilter" class="org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter">
+        <beans:property name="authenticationManager" ref="authenticationManager"/>
+        <beans:property name="authenticationFailureHandler" ref="restAuthenticationFailureHandler"/>
+        <beans:property name="authenticationSuccessHandler" ref="restAuthenticationSuccessHandler"/>
+        <beans:property name="filterProcessesUrl" value="/rest/login"/>
+        <!--<beans:property name="usernameParameter" value="munky"/>
+        <beans:property name="passwordParameter" value="123456"/>-->
+        <beans:property name="postOnly" value="true"/>
+    </beans:bean>
+    
+    <beans:bean id="restAuthenticationSuccessHandler" 
+                class="it.cnr.isti.ctt.security.RestAuthenticationSuccessHandler"/>        
+    <beans:bean id="restAuthenticationFailureHandler" 
+                class="it.cnr.isti.ctt.security.RestAuthenticationFailureHandler"/>       
+    
+    <authentication-manager alias="authenticationManager">
+        <authentication-provider>
+            <user-service>
+                <user name="munky" password="123456" authorities="ROLE_USER" />
+            </user-service>
+        </authentication-provider>
+    </authentication-manager>
+            
+    <beans:bean id="logoutSuccessHandler" class="it.cnr.isti.ctt.security.RestLogoutSuccessHandler"/>            
+</beans:beans>
